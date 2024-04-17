@@ -34,12 +34,22 @@ class AANet(BaseModel):
                     disparity_pyramid[-1]=disparity_pyramid[-1].squeeze(1)
                 output = {
                     "inference_disp": {   
+                        "disp_est": disparity_pyramid[-1]
+                    },
+                    "visual_summary": {}
+                }
+        """ val deng log
+        else:
+                if  disparity_pyramid[-1].dim()==4:
+                    disparity_pyramid[-1]=disparity_pyramid[-1].squeeze(1)
+                output = {
+                    "inference_disp": {   
                         "disp_est": disparity_pyramid[-1],
                         "disp_gt": inputs["disp_gt"],
                         "mask": inputs["mask"]            
                     },
                     "visual_summary": {}
-                }
+                }"""
         return output
 
 

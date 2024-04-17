@@ -1,4 +1,4 @@
-# from .aanet import AANet  # 需先编译环境
+from .aanet import AANet  # 需先编译环境
 from .casnet import CasStereoNet
 from .cfnet import CFNet
 from .coex import CoExNet
