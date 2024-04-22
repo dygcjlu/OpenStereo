@@ -98,7 +98,8 @@ def worker(rank, world_size, opt, cfgs):
         # train_loader and val_loader are built in model_trainer
         # build test loader here since it is not used in training
         model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
-        model_trainer.test_kitti()
+        is_kitti=False
+        model_trainer.test_kitti(is_kitti)
     else:
         raise ValueError(f"Unknown scope: {scope}")
 
