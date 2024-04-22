@@ -1,0 +1,18 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes. "${command:pickArgs}"
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //--config ./configs/aanet/AANet_custom.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--config","./configs/aanet/AANet_custom.yaml",
+            "--scope", "train", "--no_distribute", "--restore_hint", "./model/official/AANet_SceneFlow.pt"]
+        }
+    ]
+}

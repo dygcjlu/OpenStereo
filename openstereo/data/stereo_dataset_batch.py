@@ -164,6 +164,19 @@ class StereoBatchDataset(Dataset):
                 self.image_reader_type,
                 self.disp_reader_type
             )
+        elif self.data_cfg['name'] == 'custom':
+            from data.reader.custom_reader import CustomReader
+            self.disp_reader_type = 'PFM'
+            # Instantiate the CustomReader
+            self.dataset = CustomReader(
+                self.data_cfg['root'],
+                self.data_cfg[f'{self.scope}_list'],
+                self.image_reader_type,
+                self.disp_reader_type,
+                right_disp=self.return_right_disp,
+                use_noc=self.data_cfg['use_noc'] if 'use_noc' in self.data_cfg else False,  # NOC disp or OCC disp
+            )
+
         else:
             name = self.data_cfg['name']
             raise NotImplementedError(f'{name} dataset is not supported yet.')

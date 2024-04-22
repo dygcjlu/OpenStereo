@@ -15,7 +15,7 @@
 #export CUDNN_LIB_DIR="/home/work/cudnn/cudnn_v7/lib64"
 TORCH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
 #echo $TORCH
-cd libs/GANet
+cd libs/AANet/deform_conv
 python setup.py clean
 rm -rf build
 python setup.py build
