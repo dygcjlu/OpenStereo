@@ -4,6 +4,17 @@ data_cfg:
   train_list: /data/dyg/dataset/custom/hk/train.txt
   val_list: /data/dyg/dataset/custom/hk/val.txt
   test_list: /data/dyg/dataset/custom/hk/val.txt
+
+  #root: /media/jason/Data1/dataset/custom/scaled3/test/
+  #train_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
+  #val_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
+  #test_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
+
+  #root: /media/jason/Data1/dataset/custom/hk
+  ##train_list: /media/jason/Data1/dataset/custom/hk/train.txt
+  #val_list: /media/jason/Data1/dataset/custom/hk/val.txt
+  #test_list: /media/jason/Data1/dataset/custom/hk/val.txt
+
   #name: KITTI2012
   #root: data/kitti12
   #train_list: datasets/KITTI12/kitti12_train194.txt
@@ -24,7 +35,7 @@ data_cfg:
       - type: RandomCrop
         size: [ 288, 384 ]
       - type: GetValidDisp
-        max_disp: 60
+        max_disp: 192
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
@@ -32,9 +43,9 @@ data_cfg:
         std: [ 0.229, 0.224, 0.225 ]
     val:
       - type: CropOrPad
-        size: [  312, 420 ]
+        size: [ 312, 420 ]
       - type: GetValidDisp
-        max_disp: 60
+        max_disp: 192
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
@@ -42,7 +53,7 @@ data_cfg:
         std: [ 0.229, 0.224, 0.225 ]
     test:
       - type: CropOrPad
-        size: [   312, 420]
+        size: [ 312, 420 ]
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
@@ -55,7 +66,7 @@ model_cfg:
   find_unused_parameters: false
 
   base_config: 
-    max_disp: 60
+    max_disp: 192
     num_downsample: 2
     feature_type: aanet
     no_feature_mdconv: false
@@ -82,7 +93,7 @@ loss_cfg:
     scales: 5
     downscale: 1
     loss: L1
-    maxdisp: 60
+    maxdisp: 192
     mask: false
     weights: [[0.33, 0.66, 1.0, 1.0, 1.0]]
   
@@ -104,6 +115,7 @@ trainer_cfg:
   sync_bn: true
   fix_bn: false
   init_parameters: false
+  load_state_dict_strict: false
 
   optimizer_cfg:
     solver: lamb

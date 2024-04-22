@@ -17,7 +17,7 @@ from utils import NoOp, get_attr_from, get_valid_args, mkdir
 from utils.common import convert_state_dict
 from utils.warmup import LinearWarmup
 
-
+import time
 class BaseTrainer:
     def __init__(
             self,
@@ -354,7 +354,7 @@ class BaseTrainer:
             return epoch_metrics
 
     @torch.no_grad()
-    def test_kitti(self):
+    def test_kitti(self, is_kitti=True):
         self.model.eval()
         model_name = self.model.model_name
         data_name = self.data_cfg['name']
@@ -367,7 +367,10 @@ class BaseTrainer:
         for i, inputs in enumerate(self.test_loader):
             ipts = self.model.prepare_inputs(inputs, device=self.device)
             with autocast(enabled=self.amp):
+                t1 = time.time()
                 output = self.model.forward(ipts)
+                t2 = time.time()
+                print('time:', t2-t1)
             inference_disp, visual_summary = output['inference_disp'], output['visual_summary']
             disp_est = inference_disp['disp_est']
             # crop padding
@@ -380,7 +383,11 @@ class BaseTrainer:
                     disp_est = disp_est[:, pad_top:, :-pad_right]
             # save to file
             img = disp_est.squeeze(0).cpu().numpy()
-            img = (img * 256).astype('uint16')
+            if is_kitti:
+                img = (img * 256).astype('uint16')
+            else:
+                img = img.astype('uint16')
+
             img = Image.fromarray(img)
             name = inputs['name']
             img.save(os.path.join(output_dir, name))
