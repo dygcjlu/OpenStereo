@@ -21,17 +21,22 @@ class aanet(nn.Module):
         self.no_intermediate_supervision=model_cfg['base_config']['no_intermediate_supervision']
         self.num_stage_blocks=model_cfg['base_config']['num_stage_blocks']
         self.num_deform_blocks=model_cfg['base_config']['num_deform_blocks']
+        self.feature_similarity = model_cfg['base_config']['feature_similarity']
 
         # Feature extractor
-        self.feature_extractor = AANetFeature(feature_mdconv=(not self.no_feature_mdconv))
-        self.max_disp = self.max_disp // 3
+        self.down_first_feature = True  # 地一个特征图是否降采样为原图的三分之一
+        self.feature_extractor = AANetFeature(feature_mdconv=(not self.no_feature_mdconv), down_first_feature=self.down_first_feature)
+        if self.down_first_feature:
+            self.max_disp = self.max_disp // 3
+
+    
         in_channels = [32 * 4, 32 * 8, 32 * 16, ]
         self.fpn = FeaturePyramidNetwork(in_channels=in_channels,
                                              out_channels=32 * 4)
                           
         # Cost volume construction
         cost_volume_module = CostVolumePyramid  
-        self.cost_volume = cost_volume_module(self.max_disp,feature_similarity='correlation')
+        self.cost_volume = cost_volume_module(self.max_disp, self.feature_similarity)
 
         # Cost aggregation
         self.aggregation = AdaptiveAggregation(max_disp=self.max_disp,

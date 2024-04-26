@@ -1,16 +1,16 @@
 data_cfg:
-  #name: FlyingThings3DSubset
-  #root: /mnt/nas/public_data/SceneFlow/
-  #train_list: datasets/SceneFlow/FlyingThings3D_sttr_train.txt
-  #val_list: datasets/SceneFlow/FlyingThings3D_sttr_test.txt
-  #test_list: datasets/SceneFlow/FlyingThings3D_sttr_test.txt
-  name: KITTI2015
-  root: /home/huger/dyg/dataset/kitti/kitti2015/data_scene_flow
-  train_list: datasets/KITTI15/kitti15_train200.txt
-  val_list: datasets/KITTI15/kitti15_train200.txt
-  test_list: datasets/KITTI15/kitti15_test.txt
+  name: custom
+  root: /data/dyg/dataset/custom/hk
+  train_list: /data/dyg/dataset/custom/hk/train.txt
+  val_list: /data/dyg/dataset/custom/hk/val.txt
+  test_list: /data/dyg/dataset/custom/hk/val.txt
+  #name: KITTI2015
+  #root: /home/huger/dyg/dataset/kitti/kitti2015/data_scene_flow
+  #train_list: datasets/KITTI15/kitti15_train200.txt
+  #val_list: datasets/KITTI15/kitti15_train200.txt
+  #test_list: datasets/KITTI15/kitti15_test.txt
   num_workers: 8
-  train_batch_size: 1
+  train_batch_size: 2
   val_batch_size: 1
   pin_memory: true
   shuffle: true
@@ -29,7 +29,7 @@ data_cfg:
       - type: RandomCrop
         size: [ 360, 640 ]
       - type: GetValidDisp
-        max_disp: 192
+        max_disp: 48
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
@@ -40,19 +40,28 @@ data_cfg:
       - type: StereoPad
         size: [ 540, 960 ]
       - type: GetValidDisp
-        max_disp: 192
+        max_disp: 48
+      - type: TransposeImage
+      - type: ToTensor
+      - type: NormalizeImage
+        mean: [ 0.485, 0.456, 0.406 ]
+        std: [ 0.229, 0.224, 0.225 ]
+    test:
+      - type: StereoPad
+        size: [ 540, 960 ]
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
         mean: [ 0.485, 0.456, 0.406 ]
         std: [ 0.229, 0.224, 0.225 ]
 
+
 model_cfg:
   model: STTRNet
   _set_static_graph: true
   find_unused_parameters: false
   base_config:
-    max_disp: 192
+    max_disp: 48
     channel_dim: 128
     position_encoding: sine1d_rel
     num_attn_layers: 6
@@ -72,21 +81,22 @@ model_cfg:
 loss_cfg:
   # This model uses the user-defined loss function.
   px_error_threshold: 3
-  validation_max_disp: 192
+  validation_max_disp: 48
   loss_weight: 'rr:1.0, l1_raw:1.0, l1:1.0, occ_be:1.0'
 
 
 trainer_cfg:
-  save_name: STTR-Stereo_FlyingThings3D_subset
-  total_epoch: 10
+  save_name: STTR-Stereo_custom
+  total_epoch: 50
   restore_hint: 0
   log_iter: 50 # iter
-  save_every: 1 # epoch
-  val_every: 1 # epoch
+  save_every: 5 # epoch
+  val_every: 5 # epoch
   amp: false
   sync_bn: true
   fix_bn: false
   init_parameters: false
+  resume: false
 
   optimizer_cfg:
     solver: Adam
@@ -98,9 +108,9 @@ trainer_cfg:
   scheduler_cfg:
     scheduler: MultiStepLR
     gamma: 0.5
-    milestones: [ 5, 7, 9]
+    milestones: [ 15, 27, 39]
     warmup:
-      warmup_steps: 2000
+      warmup_steps: 200
 
   evaluator_cfg:
     metric:

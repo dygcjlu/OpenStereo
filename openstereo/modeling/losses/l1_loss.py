@@ -97,6 +97,8 @@ class MultiAANetScaleLoss(BaseLoss):
         self.weights = torch.Tensor(scales).fill_(1).cuda() if weights is None else torch.Tensor(weights).cuda()
         assert(len(self.weights[0]) == scales)
 
+        self.iter_count = 0
+
         if type(loss) is str:
 
             if loss == 'L1':
@@ -112,8 +114,10 @@ class MultiAANetScaleLoss(BaseLoss):
         self.multiScales = [nn.AvgPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
        
     def forward(self, disp_ests, disp_gt, mask=None,round=0):
-       # weights=self.weights[round]
-        weights=[1/3,2/3,1.0,1.0,1.0]
+        weights=self.weights[0]
+        loss_dict = {}
+        #weights=[1/3,2/3,1.0,1.0,1.0]
+        self.iter_count+=1
         if (type(disp_ests) is tuple) or (type(disp_ests) is list):
             out = 0
         
@@ -127,9 +131,12 @@ class MultiAANetScaleLoss(BaseLoss):
                 input_=input_.squeeze(1)
                 
                 EPE_ = self.SL_EPE(input_, disp_gt, self.maxdisp)
+                loss_dict[i] = EPE_.cpu().detach().numpy()
                 out += weights[i] * EPE_
         else:
             return 
+        if self.iter_count % 41 == 0:
+            print(loss_dict)
         self.info.update({'loss': out})
         return out, self.info
     

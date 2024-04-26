@@ -16,6 +16,7 @@ from modeling.common import ClipGrad, fix_bn
 from utils import NoOp, get_attr_from, get_valid_args, mkdir
 from utils.common import convert_state_dict
 from utils.warmup import LinearWarmup
+import numpy as np
 
 import time
 class BaseTrainer:
@@ -386,11 +387,22 @@ class BaseTrainer:
             if is_kitti:
                 img = (img * 256).astype('uint16')
             else:
-                img = img.astype('uint16')
+                img = (img * 256).astype('uint16') # 乘256是为了保留小数点后的数
 
+            ##
+            max_value = np.max(img)
+            img_uint8 = (img * 255.0 / max_value).astype(np.uint8)
+           
+            
             img = Image.fromarray(img)
             name = inputs['name']
             img.save(os.path.join(output_dir, name))
+
+            new_name = name + ".jpg"
+            img_uint8 = Image.fromarray(img_uint8)
+            img_uint8.save(os.path.join(output_dir, new_name))
+
+            
         self.msg_mgr.log_info("Testing finished.")
 
     def save_ckpt(self):

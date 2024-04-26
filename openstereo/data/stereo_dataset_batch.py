@@ -165,17 +165,29 @@ class StereoBatchDataset(Dataset):
                 self.disp_reader_type
             )
         elif self.data_cfg['name'] == 'custom':
-            from data.reader.custom_reader import CustomReader
-            self.disp_reader_type = 'PFM'
-            # Instantiate the CustomReader
-            self.dataset = CustomReader(
-                self.data_cfg['root'],
-                self.data_cfg[f'{self.scope}_list'],
-                self.image_reader_type,
-                self.disp_reader_type,
-                right_disp=self.return_right_disp,
-                use_noc=self.data_cfg['use_noc'] if 'use_noc' in self.data_cfg else False,  # NOC disp or OCC disp
-            )
+            if "test" in self.scope:
+                from data.reader.custom_reader import CustomReaderTest
+                self.disp_reader_type = 'PFM'
+                self.dataset = CustomReaderTest(
+                    self.data_cfg['root'],
+                    self.data_cfg['test_list'],
+                    self.image_reader_type,
+                    self.disp_reader_type,
+                    right_disp=False,
+                    use_noc=False,
+                )
+            else:
+                from data.reader.custom_reader import CustomReader
+                self.disp_reader_type = 'PFM'
+                # Instantiate the CustomReader
+                self.dataset = CustomReader(
+                    self.data_cfg['root'],
+                    self.data_cfg[f'{self.scope}_list'],
+                    self.image_reader_type,
+                    self.disp_reader_type,
+                    right_disp=self.return_right_disp,
+                    use_noc=self.data_cfg['use_noc'] if 'use_noc' in self.data_cfg else False,  # NOC disp or OCC disp
+                )
 
         else:
             name = self.data_cfg['name']
@@ -275,8 +287,12 @@ class StereoBatchDataset(Dataset):
 
     def get_crop_size(self, base_size):
         if self.random_type == 'range_for_sttr':
-            w = random.randint(640, 960)
-            h = random.randint(360, 640)
+            #w = random.randint(640, 960)
+            #h = random.randint(360, 640)
+            w = random.randint(640, 760)
+            h = random.randint(360, 480)
+            #w = base_size[1]
+            #h = base_size[0]
         elif self.random_type == 'range':
             w = random.randint(self.w_range[0] * base_size[1], self.w_range[1] * base_size[1])
             h = random.randint(self.h_range[0] * base_size[0], self.h_range[1] * base_size[0])

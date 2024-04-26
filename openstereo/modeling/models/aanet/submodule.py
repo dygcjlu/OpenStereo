@@ -117,7 +117,8 @@ class AANetFeature(nn.Module):
                  groups=1,
                  width_per_group=64,
                  feature_mdconv=True,
-                 norm_layer=None):
+                 norm_layer=None,
+                 down_first_feature=True):
         super(AANetFeature, self).__init__()
 
         if norm_layer is None:
@@ -133,11 +134,22 @@ class AANetFeature(nn.Module):
         self.groups = groups
         self.base_width = width_per_group
 
-        stride = 3
-        self.conv1 = nn.Sequential(nn.Conv2d(3, self.inplanes, kernel_size=7, stride=stride,
+        if down_first_feature:
+            stride = 3
+            self.conv1 = nn.Sequential(nn.Conv2d(3, self.inplanes, kernel_size=7, stride=stride,
                                              padding=3, bias=False),
                                    nn.BatchNorm2d(self.inplanes),
                                    nn.ReLU(inplace=True))  # H/3
+        else:
+            stride = 1
+            self.conv1 = nn.Sequential(nn.Conv2d(3, self.inplanes, kernel_size=7, stride=stride,
+                                             padding='same', bias=False),
+                                   nn.BatchNorm2d(self.inplanes),
+                                   nn.ReLU(inplace=True))  # H
+
+
+
+        
 
         self.layer1 = self._make_layer(Bottleneck, in_channels, layers[0])  # H/3
         self.layer2 = self._make_layer(Bottleneck, in_channels * 2, layers[1], stride=2)  # H/6
@@ -505,7 +517,6 @@ class CostVolume(nn.Module):
                                                 right_feature[:, :, :, :-i]).mean(dim=1)
                 else:
                     cost_volume[:, i, :, :] = (left_feature * right_feature).mean(dim=1)
-
         else:
             raise NotImplementedError
 
