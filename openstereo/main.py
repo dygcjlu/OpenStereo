@@ -107,6 +107,9 @@ def worker(rank, world_size, opt, cfgs):
     elif scope == 'tensorrt':
         model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
         model_trainer.onnx2tensorrt()
+    elif scope == 'trt_infer':
+        model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
+        model_trainer.trt_infer()
     else:
         raise ValueError(f"Unknown scope: {scope}")
 

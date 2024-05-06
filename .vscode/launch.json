@@ -5,6 +5,7 @@
     //--config ./configs/aanet/AANet_custom.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
     //, "--restore_hint", "./model/official/AANet_SceneFlow.pt"
     //"--restore_hint", "./model/hk_camera/AANet_SceneFlow_lamb_b64_288_4e3_epoch_070.pt
+    //  tensorrt trt_infer 
     "version": "0.2.0",
     "configurations": [
         {
@@ -14,7 +15,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": ["--config","./configs/aanet/AANet_custom.yaml",
-            "--scope", "tensorrt", "--no_distribute",
+            "--scope", "trt_infer", "--no_distribute",
             "--restore_hint", "./model/hk_camera/AANet_0429_epoch_070.pt"]
         }
     ]

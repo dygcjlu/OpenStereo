@@ -665,6 +665,50 @@ class BaseTrainer:
             #f.write(bytearray(engine.serialize()))
             f.write(engine)
             print("generating file done!")
+    
+    def trt_infer(self):
+        import tensorrt as trt
+        print(trt.__version__)
+        #assert trt.Builder(trt.Logger())
+        from tensorrt_util import trt_common as common
+
+        TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
+
+        engine_file_path = "./output/aanet_sim.engine"
+
+        def get_engine(engine_file_path=""):
+            if os.path.exists(engine_file_path):
+                # If a serialized engine exists, use it instead of building an engine.
+                print("Reading engine from file {}".format(engine_file_path))
+                with open(engine_file_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
+                    return runtime.deserialize_cuda_engine(f.read())
+        with get_engine( engine_file_path) as engine, engine.create_execution_context() as context:
+            inputs, outputs, bindings, stream = common.allocate_buffers(engine)
+
+            for i, inputs in enumerate(self.test_loader):
+                ipts = self.model.prepare_inputs(inputs, device=self.device)
+
+                left_img = ipts['ref_img']
+                right_img = ipts['tgt_img']
+                #pytorch_output = self.model.onnx_export(left_img, right_img)
+                left_img = left_img.cpu().numpy()
+                right_img = right_img.cpu().numpy()
+                # Do inference
+                #print("Running inference on image {}...".format(input_image_path))
+                # Set host input to the image. The common.do_inference function will copy the input to the GPU before executing.
+                inputs[0].host = left_img
+                inputs[1].host = right_img
+                trt_outputs = common.do_inference(
+                    context,
+                    engine=engine,
+                    bindings=bindings,
+                    inputs=inputs,
+                    outputs=outputs,
+                    stream=stream,
+                )
+                print("infer done")
+    
+        
 
 
 
