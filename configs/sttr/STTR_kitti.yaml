@@ -24,10 +24,12 @@ data_cfg:
   #  h_range: [ 256, 288, 320, 352 ]
   #  w_range: [ 480, 512, 544, 576 ]
 
+  # size: [ 288, 576 ]
+
   transform:
     train:
       - type: RandomCrop
-        size: [ 360, 640 ]
+        size: [ 144, 288 ]
       - type: GetValidDisp
         max_disp: 192
       - type: TransposeImage
@@ -38,7 +40,7 @@ data_cfg:
 
     val:
       - type: StereoPad
-        size: [ 540, 960 ]
+        size: [ 384, 1248 ]
       - type: GetValidDisp
         max_disp: 192
       - type: TransposeImage

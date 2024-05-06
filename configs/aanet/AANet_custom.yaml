@@ -10,10 +10,10 @@ data_cfg:
   #val_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
   #test_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
 
-  #root: /media/jason/Data1/dataset/custom/hk
-  ##train_list: /media/jason/Data1/dataset/custom/hk/train.txt
-  #val_list: /media/jason/Data1/dataset/custom/hk/val.txt
-  #test_list: /media/jason/Data1/dataset/custom/hk/val.txt
+  root: /media/jason/Data1/dataset/custom/hk
+  train_list: /media/jason/Data1/dataset/custom/hk/train.txt
+  val_list: /media/jason/Data1/dataset/custom/hk/val.txt
+  test_list: /media/jason/Data1/dataset/custom/hk/val.txt
 
   #name: KITTI2012
   #root: data/kitti12

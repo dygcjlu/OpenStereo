@@ -13,6 +13,10 @@ python openstereo/main.py --config ./configs/aanet/AANet_custom.yaml --scope tes
 
 python openstereo/main.py --config ./configs/aanet/AANet_custom.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
 
+python openstereo/main.py --config ./configs/aanet/AANet_custom.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
+
+python openstereo/main.py --config ./configs/sttr/STTR_kitti.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
+
 ###### huger
 python openstereo/main.py --config ./configs/aanet/AANet_custom.yaml --scope train --no_distribute --restore_hint ./model/official/AANet_SceneFlow.pt
 python openstereo/main.py --config ./configs/aanet/AANet_custom.yaml --scope test_kitti --no_distribute --restore_hint ./model/hk_camera/AANet_SceneFlow_lamb_b64_288_4e3_epoch_070.pt
