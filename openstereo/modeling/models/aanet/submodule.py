@@ -645,7 +645,8 @@ class AdaptiveAggregation(nn.Module):
                  num_deform_blocks=2,
                  intermediate_supervision=True,
                  deformable_groups=2,
-                 mdconv_dilation=2):
+                 mdconv_dilation=2,
+                 no_feature_mdconv=True):
         super(AdaptiveAggregation, self).__init__()
 
         self.max_disp = max_disp
@@ -663,6 +664,9 @@ class AdaptiveAggregation(nn.Module):
             if i >= num_fusions - num_deform_blocks:
                 simple_bottleneck_module = False
             else:
+                simple_bottleneck_module = True
+
+            if no_feature_mdconv:
                 simple_bottleneck_module = True
 
             fusions.append(AdaptiveAggregationModule(num_scales=self.num_scales,
@@ -726,8 +730,10 @@ class DisparityEstimation(nn.Module):
         return disp
 
 class StereoDRNetRefinement(nn.Module):
-    def __init__(self):
+    def __init__(self, scale_factor):
         super(StereoDRNetRefinement, self).__init__()
+
+        self.scale_factor = scale_factor
 
         # Left and warped error
         in_channels = 6
@@ -748,12 +754,14 @@ class StereoDRNetRefinement(nn.Module):
     def forward(self, low_disp, left_img, right_img):
         assert low_disp.dim() == 3
         low_disp = low_disp.unsqueeze(1)  # [B, 1, H, W]
-        scale_factor = left_img.size(-1) / low_disp.size(-1)
-        if scale_factor == 1.0:
+        #self.scale_factor = left_img.size(-1) / low_disp.size(-1)
+
+        if self.scale_factor == 1.0:
             disp = low_disp
         else:
-            disp = F.interpolate(low_disp, size=left_img.size()[-2:], mode='bilinear', align_corners=False)
-            disp = disp * scale_factor
+            #disp = F.interpolate(low_disp, size=left_img.size()[-2:], mode='bilinear', align_corners=False)
+            disp = F.interpolate(low_disp, scale_factor=self.scale_factor, mode='bilinear', align_corners=False)
+            disp = disp * self.scale_factor
 
         # Warp right image to left view with current disparity
         warped_right = disp_warp(right_img, disp)[0]  # [B, C, H, W]

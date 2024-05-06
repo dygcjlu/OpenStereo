@@ -54,7 +54,8 @@ class MSNet2D(nn.Module):
 
         self.num_groups = 1
 
-        self.volume_size = 48
+        #self.volume_size = 48
+        self.volume_size = self.maxdisp // 4
 
         self.hg_size = 48
 

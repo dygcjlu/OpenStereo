@@ -46,15 +46,28 @@ class aanet(nn.Module):
                                                    num_deform_blocks=self.num_deform_blocks,
                                                    mdconv_dilation=self.mdconv_dilation,
                                                    deformable_groups=self.deformable_groups,
-                                                   intermediate_supervision=not self.no_intermediate_supervision)
+                                                   intermediate_supervision=not self.no_intermediate_supervision,
+                                                   no_feature_mdconv=self.no_feature_mdconv)
         match_similarity= True
         # Disparity estimation
         self.disparity_estimation = DisparityEstimation(self.max_disp, match_similarity)
 
         # Refinement
+        max_disp_width_scale = 1.0
+        if self.down_first_feature:
+            max_disp_width = 3.0 #代价聚合后的最大视差尺寸为原图的1/3
+        else:
+            max_disp_width = 1.0
+        
         refine_module_list = nn.ModuleList()
+        scale_factor = 1.0
         for i in range(self.num_downsample):
-            refine_module_list.append(StereoDRNetRefinement())
+            if i == 0:
+                scale_factor = max_disp_width / 2.0
+            else:
+                scale_factor = 2.0
+
+            refine_module_list.append(StereoDRNetRefinement(scale_factor))
         self.refinement = refine_module_list
 
     def feature_extraction(self, img):
@@ -120,6 +133,20 @@ class aanet(nn.Module):
                                                        disparity_pyramid[-1])
 
         return disparity_pyramid  
+    
+    
+    def onnx_export(self, left_tensor, right_tensor):
+        left_feature = self.feature_extraction(left_tensor)
+        right_feature = self.feature_extraction(right_tensor)
+        cost_volume = self.cost_volume_construction(left_feature, right_feature)
+        aggregation = self.aggregation(cost_volume)
+        disparity_pyramid = self.disparity_computation(aggregation[0])
+        disparity_pyramid += self.disparity_refinement(left_tensor, right_tensor,
+                                                       disparity_pyramid[-1])
+        result = disparity_pyramid[-1]
+
+        return result  
+
 
 
 

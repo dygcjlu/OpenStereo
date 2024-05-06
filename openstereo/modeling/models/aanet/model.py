@@ -16,6 +16,7 @@ class AANet(BaseModel):
         self.aanet=aanet(model_cfg=self.model_cfg)
     
     def forward(self, inputs):
+        
         disparity_pyramid=self.aanet(inputs)
     
         if self.training:
@@ -39,7 +40,7 @@ class AANet(BaseModel):
                     "visual_summary": {}
                 }
         """ val deng log
-        else:
+        selse:
                 if  disparity_pyramid[-1].dim()==4:
                     disparity_pyramid[-1]=disparity_pyramid[-1].squeeze(1)
                 output = {
@@ -51,6 +52,12 @@ class AANet(BaseModel):
                     "visual_summary": {}
                 }"""
         return output
+    
+    def onnx_export(self, left_img, right_img):
+        disparity_pyramid=self.aanet.onnx_export(left_img, right_img)
+
+        #return disparity_pyramid[-1]
+        return disparity_pyramid
 
 
 class AANet_Trainer(BaseTrainer):

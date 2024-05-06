@@ -18,6 +18,10 @@ from utils.common import convert_state_dict
 from utils.warmup import LinearWarmup
 import numpy as np
 
+import onnx
+from onnxsim import simplify
+import onnxruntime
+
 import time
 class BaseTrainer:
     def __init__(
@@ -502,3 +506,167 @@ class BaseTrainer:
         else:
             save_name = restore_hint
         self.load_ckpt(save_name)
+
+    @torch.no_grad()
+    def export2onnx(self):
+
+  
+        self.model.eval()
+        model_name = self.model.model_name
+        data_name = self.data_cfg['name']
+        output_dir = os.path.join(
+            self.trainer_cfg.get("save_path", "./output"),
+            f"{data_name}/{model_name}/{data_name}_submit/disp_1"
+        )
+        os.makedirs(output_dir, exist_ok=True)
+        self.msg_mgr.log_info("Start testing...")
+        onnx_file = "./output/aanet.onnx"
+        onnx_sim__file = "./output/aanet_sim.onnx"
+        for i, inputs in enumerate(self.test_loader):
+            ipts = self.model.prepare_inputs(inputs, device=self.device)
+
+            left_img = ipts['ref_img']
+            right_img = ipts['tgt_img']
+            #output = self.model.forward(ipts)
+            self.model.forward = self.model.onnx_export
+
+            torch.onnx.export(
+            self.model,
+            (left_img, right_img),
+            onnx_file,
+            input_names=["input1","input2"],
+            output_names=["output"],
+            export_params=True,
+            #verbose=True,
+            opset_version=16)
+            break
+
+        onnx_model = onnx.load(onnx_file)
+        onnx.checker.check_model(onnx_model)
+        #print(onnx_model)
+        # convert model
+        model_simp, check = simplify(onnx_model)
+
+        #assert check, "Simplified ONNX model could not be validated"
+
+        onnx.save(model_simp, onnx_sim__file)
+
+        ort_session = onnxruntime.InferenceSession(onnx_sim__file)
+        
+        input_name1 = ort_session.get_inputs()[0].name
+        input_name2 = ort_session.get_inputs()[1].name 
+        output_name = ort_session.get_outputs()[0].name
+        print("input:", input_name1)
+        print("input:", input_name2)
+        print("output:", output_name)
+        for node in ort_session.get_outputs():
+            print("output:", node)
+
+        for i, inputs in enumerate(self.test_loader):
+            ipts = self.model.prepare_inputs(inputs, device=self.device)
+
+            left_img = ipts['ref_img']
+            right_img = ipts['tgt_img']
+            pytorch_output = self.model.onnx_export(left_img, right_img)
+
+            left_img = left_img.cpu().numpy()
+            right_img = right_img.cpu().numpy()
+
+            ort_inputs = {input_name1: left_img, input_name2:right_img}
+            onnx_output = ort_session.run([output_name], ort_inputs)
+
+            pytorch_output = pytorch_output.cpu().numpy()
+
+            rtol = 1e-03
+            atol = 1e-03
+            res = np.allclose(pytorch_output, onnx_output, rtol, atol) 
+            print ("Are the two arrays are equal within the tolerance: \t", res) 
+
+            # crop padding
+            disp_est = onnx_output
+            if 'pad' in ipts:
+                pad_top, pad_right, _, _ = ipts['pad']
+                # tensor[:0] is equivalent to remove this dimension
+                if pad_right == 0:
+                    disp_est = disp_est[:, pad_top:, :]
+                else:
+                    disp_est = disp_est[:, pad_top:, :-pad_right]
+            # save to file
+                    
+            img = np.squeeze(disp_est)
+            img = (img * 256).astype('uint16') # 乘256是为了保留小数点后的数
+                
+            ##
+            max_value = np.max(img)
+            img_uint8 = (img * 255.0 / max_value).astype(np.uint8)
+           
+            img = Image.fromarray(img)
+            name = inputs['name']
+            img.save(os.path.join(output_dir, name))
+
+            new_name = name + ".jpg"
+            img_uint8 = Image.fromarray(img_uint8)
+            img_uint8.save(os.path.join(output_dir, new_name))
+        print('export onnx done')
+
+    def onnx2tensorrt(self):
+        #在tensorrt 10.0.1版本测试通过
+        import tensorrt as trt
+        print(trt.__version__)
+        assert trt.Builder(trt.Logger())
+
+        #TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+
+        # create builder and network
+        TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
+        builder = trt.Builder(TRT_LOGGER)
+        EXPLICIT_BATCH = 1 << (int)(
+            trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+        network = builder.create_network(EXPLICIT_BATCH)
+
+        # parse onnx
+        onnx_file = "./output/aanet_sim.onnx"
+        output_engine = "./output/aanet_sim.engine"
+        onnx_model = onnx.load(onnx_file)
+        parser = trt.OnnxParser(network, TRT_LOGGER)
+ 
+
+        """
+        if not parser.parse(onnx_model.SerializeToString()):
+            error_msgs = ''
+            for error in range(parser.num_errors):
+                error_msgs += f'{parser.get_error(error)}\n'
+            raise RuntimeError(f'Failed to parse onnx, {error_msgs}')"""
+
+        config = builder.create_builder_config()
+
+        with open(onnx_file, "rb") as model:
+            if not parser.parse(model.read()):
+                print("ERROR: Failed to parse the ONNX file.")
+                for error in range(parser.num_errors):
+                    print(parser.get_error(error))
+                return None
+        #config.max_workspace_size = 1<<20
+        # 1 << 30 == 1GB
+        config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)
+        #config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, common.GiB(1))
+        profile = builder.create_optimization_profile()
+
+        profile.set_shape('input1', [1, 3 ,540 ,960], [1, 3 ,540 ,960], [1, 3 ,540 ,960])
+        profile.set_shape('input2', [1, 3 ,540 ,960], [1, 3 ,540 ,960], [1, 3 ,540 ,960])
+        config.add_optimization_profile(profile)
+        # create engine
+        with torch.cuda.device(self.device):
+            #engine = builder.build_engine(network, config)
+            engine = builder.build_serialized_network(network, config)
+            runtime = trt.Runtime(TRT_LOGGER)
+
+        with open(output_engine, mode='wb') as f:
+            #f.write(bytearray(engine.serialize()))
+            f.write(engine)
+            print("generating file done!")
+
+
+
+
+            

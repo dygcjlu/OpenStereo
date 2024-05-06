@@ -58,3 +58,10 @@ class MSNet(BaseModel):
                     'image/val/disp_c': torch.cat([inputs['disp_gt'][0], disp_pred[0]], dim=0),
                 }
         return output
+    
+    def onnx_export(self, left_img, right_img):
+        
+        res = self.net(left_img, right_img)
+
+        #return disparity_pyramid[-1]
+        return res[0]

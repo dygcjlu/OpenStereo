@@ -207,7 +207,7 @@ class RandomCrop(object):
     def __call__(self, sample):
         crop_height, crop_width = self.size
         height, width = sample['left'].shape[:2]  # (H, W, 3)
-        if crop_width >= width or crop_height >= height:
+        if crop_width > width or crop_height >= height:
             return sample
         else:
             x1, y1, x2, y2 = self.get_random_crop_coords(height, width, crop_height, crop_width)

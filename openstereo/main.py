@@ -14,7 +14,8 @@ def arg_parse():
     parser = argparse.ArgumentParser(description='Main program for OpenStereo.')
     parser.add_argument('--config', type=str, default='configs/psmnet/PSMNet_sceneflow.yaml',
                         help="path of config file")
-    parser.add_argument('--scope', default='train', choices=['train', 'val', 'test_kitti'],
+    #, choices=['train', 'val', 'test_kitti', 'onnx','tensorrt']
+    parser.add_argument('--scope', default='train',
                         help="choose train or test scope")
     parser.add_argument('--master_addr', type=str, default='localhost', help="master address")
     parser.add_argument('--master_port', type=str, default='12355', help="master port")
@@ -100,6 +101,12 @@ def worker(rank, world_size, opt, cfgs):
         model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
         is_kitti=False
         model_trainer.test_kitti(is_kitti)
+    elif scope == 'onnx':
+        model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
+        model_trainer.export2onnx()
+    elif scope == 'tensorrt':
+        model_trainer.test_loader = model_trainer.get_data_loader(model_trainer.data_cfg, 'test')
+        model_trainer.onnx2tensorrt()
     else:
         raise ValueError(f"Unknown scope: {scope}")
 
