@@ -522,7 +522,7 @@ class BaseTrainer:
         self.msg_mgr.log_info("Start testing...")
         onnx_file = "./output/aanet.onnx"
         onnx_sim__file = "./output/aanet_sim.onnx"
-        for i, inputs in enumerate(self.test_loader):
+        for i, inputs in enumerate(self.test_loadfer):
             ipts = self.model.prepare_inputs(inputs, device=self.device)
 
             left_img = ipts['ref_img']
@@ -620,15 +620,17 @@ class BaseTrainer:
         # create builder and network
         TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
         builder = trt.Builder(TRT_LOGGER)
+        builder.max_batch_size = 1
         EXPLICIT_BATCH = 1 << (int)(
             trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
         network = builder.create_network(EXPLICIT_BATCH)
 
         # parse onnx
         onnx_file = "./output/aanet_sim.onnx"
-        output_engine = "./output/aanet_sim.engine"
-        onnx_model = onnx.load(onnx_file)
+        output_engine = "./output/aanet_sim_fp16.engine"
+        #onnx_model = onnx.load(onnx_file)
         parser = trt.OnnxParser(network, TRT_LOGGER)
+         
  
 
         """
@@ -639,6 +641,7 @@ class BaseTrainer:
             raise RuntimeError(f'Failed to parse onnx, {error_msgs}')"""
 
         config = builder.create_builder_config()
+        config.set_flag(trt.BuilderFlag.FP16)
 
         with open(onnx_file, "rb") as model:
             if not parser.parse(model.read()):
@@ -648,7 +651,7 @@ class BaseTrainer:
                 return None
         #config.max_workspace_size = 1<<20
         # 1 << 30 == 1GB
-        config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)
+        config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 33)
         #config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, common.GiB(1))
         profile = builder.create_optimization_profile()
 
@@ -667,6 +670,7 @@ class BaseTrainer:
             print("generating file done!")
     
     def trt_infer(self):
+        
         import tensorrt as trt
         print(trt.__version__)
         #assert trt.Builder(trt.Logger())
@@ -675,6 +679,13 @@ class BaseTrainer:
         TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
 
         engine_file_path = "./output/aanet_sim.engine"
+        onnx_sim__file = "./output/aanet_sim.onnx"
+
+        ort_session = onnxruntime.InferenceSession(onnx_sim__file)
+        
+        input_name1 = ort_session.get_inputs()[0].name
+        input_name2 = ort_session.get_inputs()[1].name 
+        output_name = ort_session.get_outputs()[0].name
 
         def get_engine(engine_file_path=""):
             if os.path.exists(engine_file_path):
@@ -682,11 +693,16 @@ class BaseTrainer:
                 print("Reading engine from file {}".format(engine_file_path))
                 with open(engine_file_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
                     return runtime.deserialize_cuda_engine(f.read())
+                
         with get_engine( engine_file_path) as engine, engine.create_execution_context() as context:
             inputs, outputs, bindings, stream = common.allocate_buffers(engine)
 
-            for i, inputs in enumerate(self.test_loader):
-                ipts = self.model.prepare_inputs(inputs, device=self.device)
+            for i, in_datas in enumerate(self.test_loader):
+                print("i:",i)
+                t1 = time.time()
+                ipts = self.model.prepare_inputs(in_datas, device=self.device)
+                t2 = time.time()
+                print('prepare_inputs time:', t2-t1)
 
                 left_img = ipts['ref_img']
                 right_img = ipts['tgt_img']
@@ -698,6 +714,8 @@ class BaseTrainer:
                 # Set host input to the image. The common.do_inference function will copy the input to the GPU before executing.
                 inputs[0].host = left_img
                 inputs[1].host = right_img
+
+                t1 = time.time()
                 trt_outputs = common.do_inference(
                     context,
                     engine=engine,
@@ -706,7 +724,30 @@ class BaseTrainer:
                     outputs=outputs,
                     stream=stream,
                 )
-                print("infer done")
+                t2 = time.time()
+                print('trt_outputs time:', t2-t1)
+
+                trt_output = trt_outputs[0].reshape((1, 540, 960))
+
+                ort_inputs = {input_name1: left_img, input_name2:right_img}
+
+                t1 = time.time()
+    
+                onnx_output = ort_session.run([output_name], ort_inputs)
+                t2 = time.time()
+                print('onnx_output time:', t2-t1)
+
+                rtol = 3e-02
+                atol = 3e-02
+                res = np.allclose(trt_output, onnx_output, rtol, atol) 
+                diff = trt_output - onnx_output
+                diff_abs = np.absolute(diff)
+                mean = np.mean(diff_abs)
+                max = np.max(diff_abs)
+
+                print ("Are the two arrays are equal within the tolerance: \t", res) 
+                print("max diff:{}, mean:{}".format(max, mean))
+                #print("infer done")
     
         
 

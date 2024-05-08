@@ -31,4 +31,5 @@ python openstereo/main.py --config ./configs/msnet/MSNet2D_custom.yaml --scope t
 python openstereo/main.py --config ./configs/msnet/MSNet3D_custom.yaml --scope test_kitti --no_distribute --restore_hint ./output/custom/MSNet/MSNet3D_SceneFlow/checkpoints/MSNet3D_SceneFlow_epoch_001.pt
 python openstereo/main.py --config ./configs/msnet/MSNet3D_custom.yaml --scope onnx --no_distribute --restore_hint ./output/custom/MSNet/MSNet3D_SceneFlow/checkpoints/MSNet3D_SceneFlow_epoch_001.pt
 
+--config ./configs/aanet/AANet_custom.yaml --scope trt_infer --no_distribute --restore_hint ./model/hk_camera/AANet_0429_epoch_070.pt
 """

@@ -1,19 +1,15 @@
 data_cfg:
   name: custom
-  root: /data/dyg/dataset/custom/hk/20240424/
-  train_list: /data/dyg/dataset/custom/hk/20240424/train.txt
-  val_list: /data/dyg/dataset/custom/hk/20240424/val.txt
-  test_list: /data/dyg/dataset/custom/hk/20240424/val.txt
+  #root: /data/dyg/dataset/custom/hk/20240424/
+  #train_list: /data/dyg/dataset/custom/hk/20240424/train.txt
+  #val_list: /data/dyg/dataset/custom/hk/20240424/val.txt
+  #test_list: /data/dyg/dataset/custom/hk/20240424/val.txt
 
-  #root: /media/jason/Data1/dataset/custom/scaled3/test/
-  #train_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
-  #val_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
-  #test_list: /media/jason/Data1/dataset/custom/scaled3/test/test.txt
 
-  root: /media/jason/Data1/dataset/custom/hk
-  train_list: /media/jason/Data1/dataset/custom/hk/train.txt
-  val_list: /media/jason/Data1/dataset/custom/hk/val.txt
-  test_list: /media/jason/Data1/dataset/custom/hk/val.txt
+  root: /media/jason/Data1/dataset/custom/hk/20240424/
+  train_list: /media/jason/Data1/dataset/custom/hk/20240424/train.txt
+  val_list: /media/jason/Data1/dataset/custom/hk/20240424/val.txt
+  test_list: /media/jason/Data1/dataset/custom/hk/20240424/test.txt
 
   #name: KITTI2012
   #root: data/kitti12
@@ -53,8 +49,6 @@ data_cfg:
         mean: [ 0.45669437, 0.39147964, 0.3354694 ]
         std: [ 0.17762711, 0.19345888, 0.18680351 ]
     test:
-      - type: CropOrPad
-        size: [ 540, 960 ]
       - type: TransposeImage
       - type: ToTensor
       - type: NormalizeImage
